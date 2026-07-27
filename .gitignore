@@ -1,0 +1,146 @@
+# =================================================================
+# Byte-compiled / optimized / DLL files
+# =================================================================
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# =================================================================
+# Virtual environments
+# =================================================================
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# PEP 582; used by PDM, Pyflow
+__pypackages__/
+
+# =================================================================
+# Distribution / packaging
+# =================================================================
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.manifest
+*.spec
+
+# PyPI configuration
+.pypirc
+
+# =================================================================
+# Installer logs
+# =================================================================
+pip-log.txt
+pip-delete-this-directory.txt
+
+# =================================================================
+# Unit test / coverage reports
+# =================================================================
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+.tox/
+htmlcov/
+.pytest_cache/
+
+# =================================================================
+# Linters and static analysis tools
+# =================================================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+.ruff_cache/
+
+# =================================================================
+# IDE / Editor directories and files
+# =================================================================
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+.project
+.pydevproject
+.spyderproject
+.spyproject
+.ropeproject
+
+# =================================================================
+# Environment variables
+# =================================================================
+.env
+.env.*
+.flaskenv
+
+# =================================================================
+# Documentation
+# =================================================================
+site/
+
+# =================================================================
+# Other
+# =================================================================
+celerybeat-schedule
+celerybeat.pid
+*.rdb
+*.aof
+
+# =================================================================
+# Project-specific ignores
+# =================================================================
+testing/
+testing_model.py
+admintesting.py
+trigger.py
+rag_test.py
+
+
+
+# frontend
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
