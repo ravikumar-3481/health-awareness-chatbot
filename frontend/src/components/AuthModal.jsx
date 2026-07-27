@@ -79,9 +79,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, API_BASE }) 
   return (
     <div className="auth-modal-overlay" onClick={onClose}>
       <div className="auth-modal-container" onClick={(e) => e.stopPropagation()}>
-        <button className="auth-modal-close" onClick={onClose}>
-          <X size={20} />
-        </button>
+        {onClose && typeof onClose === 'function' && (
+          <button className="auth-modal-close" onClick={onClose}>
+            <X size={20} />
+          </button>
+        )}
 
         <div className="auth-modal-header">
           <div className="auth-icon-badge">
