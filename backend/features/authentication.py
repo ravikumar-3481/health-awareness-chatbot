@@ -98,7 +98,7 @@ class AuthenticationSystem:
             return {"url": "https://accounts.google.com/o/oauth2/auth"}
 
         try:
-            res = self.client.auth.get_url_for_provider({"provider": "google", "options": {"redirect_to": "http://localhost:5173"}})
+            res = self.client.auth.get_url_for_provider({"provider": "google", "options": {"redirect_to": "https://aura-health-ai-assistence.vercel.app/"}})
             return {"url": res.url if hasattr(res, 'url') else str(res)}
         except Exception as e:
             return {"url": "", "error": str(e)}
