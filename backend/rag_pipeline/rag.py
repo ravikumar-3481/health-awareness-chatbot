@@ -31,12 +31,14 @@ class RAGPipeline:
             if not rows:
                 return "", []
 
-            raw_keywords = set(re.findall(r'\b[\w\u0900-\u097F]{3,}\b', question.lower()))
+            raw_keywords = set(re.findall(r'\b[\w\u0900-\u097F]{2,}\b', question.lower()))
             stopwords = {
                 "what", "when", "where", "which", "who", "whom", "whose", "why", "how",
                 "tell", "give", "describe", "explain", "that", "this", "with", "from",
                 "have", "has", "does", "about", "your", "more", "detail", "details",
-                "info", "information", "please", "kaise", "kya", "batao", "bataeye"
+                "info", "information", "please", "kaise", "kya", "batao", "bataeye",
+                "hai", "hain", "ko", "ka", "ki", "ke", "me", "mein", "par", "se",
+                "aur", "ya", "bhi", "kisi", "bata", "mujhe", "karo", "do", "hota", "hoti", "hote"
             }
             keywords = [kw for kw in raw_keywords if kw not in stopwords]
 
@@ -61,8 +63,9 @@ class RAGPipeline:
             scored_rows.sort(key=lambda x: x[0], reverse=True)
 
             if not scored_rows:
-                context_parts = [r.get("processed_text").strip() for r in rows if r.get("processed_text")]
-                sources = list(dict.fromkeys([r.get("url") for r in rows if r.get("url")]))[:1]
+                # Greeting or no specific match: return representative summary or limited context
+                context_parts = [r.get("processed_text").strip()[:2000] for r in rows[:max_sources] if r.get("processed_text")]
+                sources = list(dict.fromkeys([r.get("url") for r in rows if r.get("url")]))[:max_sources]
                 return "\n\n".join(context_parts), sources
 
             top_rows = scored_rows[:max_sources]
@@ -80,7 +83,7 @@ class RAGPipeline:
         if not question or not isinstance(question, str):
             return {"answer": FALLBACK_MESSAGE, "sources": []}
 
-        context, sources = self.fetch_supabase_context(question, max_sources=1)
+        context, sources = self.fetch_supabase_context(question, max_sources=top_k)
 
         if not context.strip():
             self.log.info(f"No relevant processed_text context found in Supabase for question: {question}")

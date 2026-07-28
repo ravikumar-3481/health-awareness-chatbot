@@ -16,7 +16,7 @@ class LLM:
         if _llm is None:
             try:
                 MISTRAL_API_KEY = self.llm_api_key
-                _llm = ChatMistralAI(model="mistral-small-latest", MISTRAL_API_KEY=MISTRAL_API_KEY, temperature=temperature)
+                _llm = ChatMistralAI(model="mistral-small-latest", mistral_api_key=MISTRAL_API_KEY, temperature=temperature)
             except Exception as e:
                 self.log.error(f"Failed to initialize Mistral AI client: {e}")
                 raise
