@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import UserDashboard from './user/UserDashboard';
 import AdminDashboard from './admin/AdminDashboard';
 import AuthModal from './components/AuthModal';
 import Toast from './components/Toast';
+import { supabase } from './supabaseClient';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://health-awareness-chatbot-5.onrender.com/api';
 
@@ -23,13 +24,45 @@ export default function App() {
     }, 4000);
   };
 
+  useEffect(() => {
+    // Listen for Supabase OAuth callback & auth session state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && session.user) {
+        const metadata = session.user.user_metadata || {};
+        const email = session.user.email || '';
+        const name = metadata.full_name || metadata.name || email.split('@')[0] || 'User';
+        const role = metadata.role || 'user';
+        const adminApproved = metadata.admin_approved !== false;
+
+        const userObj = {
+          email: email,
+          name: name,
+          role: role,
+          admin_approved: adminApproved
+        };
+
+        setCurrentUser(userObj);
+        localStorage.setItem('aura_user', JSON.stringify(userObj));
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const handleAuthSuccess = (userObj, msg) => {
     setCurrentUser(userObj);
     localStorage.setItem('aura_user', JSON.stringify(userObj));
     showToast('success', msg);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.log('Supabase signout notice:', e);
+    }
     setCurrentUser(null);
     localStorage.removeItem('aura_user');
     showToast('info', 'Signed out successfully');

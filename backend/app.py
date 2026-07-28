@@ -282,10 +282,10 @@ def auth_login(request: AuthRequest):
 
 
 @app.get("/api/auth/google/url", tags=["Auth"])
-def get_google_auth_url():
+def get_google_auth_url(redirect_to: Optional[str] = None):
     if not auth_system:
         raise HTTPException(status_code=503, detail="Authentication service unavailable")
-    return auth_system.get_google_auth_url()
+    return auth_system.get_google_auth_url(redirect_to=redirect_to or "")
 
 
 @app.post("/api/auth/google", tags=["Auth"])
