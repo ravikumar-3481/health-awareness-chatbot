@@ -216,7 +216,7 @@
 }
 
 .admin-grid-container.single-column {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .admin-card {

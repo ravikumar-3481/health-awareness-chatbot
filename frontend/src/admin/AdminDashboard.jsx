@@ -540,10 +540,6 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
                 <h3>Backend Infrastructure Diagnostic Status</h3>
                 <div className="admin-system-health-grid">
                   <div className="health-status-row">
-                    <span className="health-label">FastAPI Uvicorn Application Server</span>
-                    <span className="health-badge healthy"><CheckCircle size={14} /> Operational (Port 8001)</span>
-                  </div>
-                  <div className="health-status-row">
                     <span className="health-label">Vector Embedding Model (Mistral AI / HuggingFace)</span>
                     <span className="health-badge healthy"><CheckCircle size={14} /> Loaded & Ready</span>
                   </div>
