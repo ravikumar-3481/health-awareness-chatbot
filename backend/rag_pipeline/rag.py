@@ -16,20 +16,22 @@ class RAGPipeline:
         self.chunking = Chunking()
         self.log = self.logger.get_logger()
         self.supabase = None
+        self.supabase_init_error = None
         try:
             self.supabase = create_client(self.config.get_supabase_url(), self.config.get_supabase_key())
         except Exception as e:
+            self.supabase_init_error = str(e)
             self.log.error(f"Failed to initialize Supabase client in RAGPipeline: {e}")
 
     def fetch_supabase_context(self, question: str, max_sources: int = 2):
         """Fetch processed_text from Supabase and rank sources by relevance to question."""
         if not self.supabase:
-            return "", []
+            return f"DEBUG_SUPABASE_IS_NONE: {self.supabase_init_error}", []
         try:
             res = self.supabase.table("urls_registry").select("processed_text", "url").execute()
             rows = res.data or []
             if not rows:
-                return "", []
+                return "DEBUG_NO_ROWS_IN_SUPABASE", []
 
             raw_keywords = set(re.findall(r'\b[\w\u0900-\u097F]{2,}\b', question.lower()))
             stopwords = {
@@ -77,7 +79,7 @@ class RAGPipeline:
 
         except Exception as e:
             self.log.error(f"Error fetching processed_text from Supabase: {e}")
-            return "", []
+            return f"DEBUG_FETCH_EXC: {type(e).__name__} - {str(e)}", []
 
     def answer(self, question: str, top_k: int = 3) -> dict:
         if not question or not isinstance(question, str):
