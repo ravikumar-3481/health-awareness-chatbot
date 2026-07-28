@@ -216,7 +216,7 @@
 }
 
 .admin-grid-container.single-column {
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .admin-card {
@@ -535,4 +535,5 @@
   .admin-grid-container,
   .admin-chat-messages,
   .admin-chat-input-area { padding: 1.25rem; }
+  .admin-grid-container.single-column { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 }
