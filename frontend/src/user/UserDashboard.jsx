@@ -72,13 +72,12 @@ export default function UserDashboard({ currentUser, onSignOut, showToast, API_B
       const res = await fetch(`${API_BASE}/admin/bookings`);
       if (res.ok) {
         const data = await res.json();
-        // Filter bookings matching current user's email or name if available
+        // Strictly filter bookings matching current user's email only
+        const userEmail = (currentUser?.email || '').trim().toLowerCase();
         const filtered = (data.bookings || []).filter(
-          (b) =>
-            b.contact_info?.toLowerCase() === currentUser?.email?.toLowerCase() ||
-            b.alias_name?.toLowerCase() === currentUser?.name?.toLowerCase()
+          (b) => (b.contact_info || '').trim().toLowerCase() === userEmail
         );
-        setUserBookings(filtered.length > 0 ? filtered : data.bookings || []);
+        setUserBookings(filtered);
       }
     } catch (err) {
       console.log('Bookings fetch offline:', err);

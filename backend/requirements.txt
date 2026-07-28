@@ -12,10 +12,8 @@ langchain-core>=0.3.0
 langchain-mistralai>=0.2.0
 langchain-text-splitters>=0.3.0
 
-# Embeddings (PyTorch CPU-only version - HUGE Space Saver)
---find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==2.2.2+cpu
-sentence-transformers>=3.3.0
+# Embeddings
+# sentence-transformers>=3.3.0
 
 # HTTP & Web Scraping
 requests>=2.32.0

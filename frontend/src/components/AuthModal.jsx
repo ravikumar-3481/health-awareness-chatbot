@@ -30,12 +30,19 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, API_BASE }) 
       const data = await res.json();
 
       if (res.ok) {
+        const isApproved = data.data?.admin_approved !== false;
+        if (role === 'admin' && !isApproved) {
+          setErrorMsg('Your Admin account signup request is pending approval from an existing Admin. Admin access rights are restricted until approved.');
+          return;
+        }
+
         const userObj = {
           email: email,
           name: name || email.split('@')[0],
-          role: role
+          role: role,
+          admin_approved: isApproved
         };
-        onAuthSuccess(userObj, isSignUp ? 'Registered and logged in successfully!' : 'Signed in successfully!');
+        onAuthSuccess(userObj, isSignUp ? (role === 'admin' ? 'Admin registration requested! Sent approval notification to main admin.' : 'Registered and logged in successfully!') : 'Signed in successfully!');
         onClose();
       } else {
         setErrorMsg(data.detail || 'Authentication failed. Please check your credentials.');
@@ -51,26 +58,22 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, API_BASE }) 
     setLoading(true);
     setErrorMsg('');
     try {
-      const res = await fetch(`${API_BASE}/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: 'mock_google_id_token' })
-      });
+      const currentOrigin = window.location.origin;
+      const urlRes = await fetch(`${API_BASE}/auth/google/url?redirect_to=${encodeURIComponent(currentOrigin)}`);
 
-      const data = await res.json();
-      if (res.ok) {
-        const userObj = {
-          email: 'user.google@gmail.com',
-          name: 'Google User',
-          role: role
-        };
-        onAuthSuccess(userObj, 'Signed in with Google successfully!');
-        onClose();
-      } else {
-        setErrorMsg(data.detail || 'Google sign-in failed.');
+      if (urlRes.ok) {
+        const urlData = await urlRes.json();
+        if (urlData.url) {
+          // Direct browser redirect to Google OAuth login
+          window.location.href = urlData.url;
+          return;
+        }
       }
+
+      setErrorMsg('Google OAuth authentication service is currently unavailable.');
     } catch (err) {
-      setErrorMsg('Google sign in endpoint unavailable.');
+      console.log('Google sign-in exception:', err);
+      setErrorMsg('Could not connect to Google authentication service.');
     } finally {
       setLoading(false);
     }
@@ -158,7 +161,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, API_BASE }) 
                 <input
                   type="text"
                   required={isSignUp}
-                  placeholder="John Doe"
+                  placeholder="Ravi"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />

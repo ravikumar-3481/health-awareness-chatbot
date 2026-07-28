@@ -299,6 +299,30 @@ def google_sign_in(request: GoogleAuthRequest):
         raise HTTPException(status_code=401, detail=str(e))
 
 
+@app.get("/api/admin/pending-approvals", tags=["Admin Auth"])
+def get_pending_admin_approvals():
+    if not auth_system:
+        return {"pending_admins": []}
+    return {"pending_admins": auth_system.get_pending_admins()}
+
+
+@app.get("/api/admin/all-admins", tags=["Admin Auth"])
+def get_all_admins():
+    if not auth_system:
+        return {"admins": []}
+    return {"admins": auth_system.get_all_admins()}
+
+
+@app.post("/api/admin/approve-admin", tags=["Admin Auth"])
+def approve_admin_request(email: str):
+    if not auth_system:
+        raise HTTPException(status_code=503, detail="Authentication service unavailable")
+    success = auth_system.approve_admin(email=email)
+    if not success:
+        raise HTTPException(status_code=440, detail="Admin request not found")
+    return {"message": "Admin user approved successfully", "email": email}
+
+
 @app.delete("/api/admin/bookings/{booking_code}", tags=["Admin Bookings"])
 def delete_booking(booking_code: str):
     try:

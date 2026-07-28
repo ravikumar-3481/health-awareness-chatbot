@@ -26,7 +26,8 @@ import {
   Activity,
   Zap,
   Users,
-  Server
+  Server,
+  UserPlus
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -58,6 +59,15 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
   // Bookings state
   const [allBookings, setAllBookings] = useState([]);
 
+  // Pending Admins & Admin Management State
+  const [pendingAdmins, setPendingAdmins] = useState([]);
+  const [allAdmins, setAllAdmins] = useState([]);
+
+  // Polling Refs for Notifications
+  const prevBookingsCount = useRef(0);
+  const prevApprovalsCount = useRef(0);
+  const isBackendOnline = useRef(true);
+
   // Settings State
   const [adminSettings, setAdminSettings] = useState({
     systemName: 'Aura Health Enterprise',
@@ -73,7 +83,51 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
   useEffect(() => {
     fetchUrls();
     fetchAllBookings();
+    fetchAdminData();
   }, [activeTab]);
+
+  useEffect(() => {
+    // Polling interval for notifications (every 10 seconds)
+    const interval = setInterval(async () => {
+      try {
+        // Fetch bookings
+        const resBookings = await fetch(`${API_BASE}/admin/bookings`);
+        if (resBookings.ok) {
+          const data = await resBookings.json();
+          const currentBookingsCount = data.bookings?.length || 0;
+          if (currentBookingsCount > prevBookingsCount.current && prevBookingsCount.current !== 0) {
+            showToast('info', 'New consultation request received!');
+          }
+          prevBookingsCount.current = currentBookingsCount;
+          if (activeTab === 'bookings') setAllBookings(data.bookings || []);
+        }
+
+        // Fetch pending admins
+        const resAdmins = await fetch(`${API_BASE}/admin/pending-approvals`);
+        if (resAdmins.ok) {
+          const data = await resAdmins.json();
+          const currentApprovalsCount = data.pending_admins?.length || 0;
+          if (currentApprovalsCount > prevApprovalsCount.current && prevApprovalsCount.current !== 0) {
+            showToast('info', 'New admin access request requires approval!');
+          }
+          prevApprovalsCount.current = currentApprovalsCount;
+          if (activeTab === 'approvals') setPendingAdmins(data.pending_admins || []);
+        }
+
+        if (!isBackendOnline.current) {
+          showToast('success', 'Backend connection restored!');
+          isBackendOnline.current = true;
+        }
+      } catch (err) {
+        if (isBackendOnline.current) {
+          showToast('error', 'Backend disconnect detected!');
+          isBackendOnline.current = false;
+        }
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [API_BASE, activeTab, showToast]);
 
   const fetchUrls = async () => {
     setIsKbLoading(true);
@@ -96,9 +150,44 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
       if (res.ok) {
         const data = await res.json();
         setAllBookings(data.bookings || []);
+        prevBookingsCount.current = data.bookings?.length || 0;
       }
     } catch (err) {
       console.log('Error fetching bookings:', err);
+    }
+  };
+
+  const fetchAdminData = async () => {
+    try {
+      const resPending = await fetch(`${API_BASE}/admin/pending-approvals`);
+      if (resPending.ok) {
+        const data = await resPending.json();
+        setPendingAdmins(data.pending_admins || []);
+        prevApprovalsCount.current = data.pending_admins?.length || 0;
+      }
+      const resAll = await fetch(`${API_BASE}/admin/all-admins`);
+      if (resAll.ok) {
+        const data = await resAll.json();
+        setAllAdmins(data.admins || []);
+      }
+    } catch (err) {
+      console.log('Error fetching admin data:', err);
+    }
+  };
+
+  const handleApproveAdmin = async (email) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/approve-admin?email=${encodeURIComponent(email)}`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        showToast('success', 'Admin approved successfully');
+        fetchAdminData();
+      } else {
+        showToast('error', 'Failed to approve admin');
+      }
+    } catch (err) {
+      showToast('error', 'Network error while approving admin');
     }
   };
 
@@ -294,6 +383,22 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
           >
             <MessageSquare size={18} />
             <span>RAG Inspector Chat</span>
+          </button>
+
+          <button
+            className={`admin-nav-item ${activeTab === 'approvals' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('approvals');
+              setIsMobileMenuOpen(false);
+            }}
+          >
+            <UserPlus size={18} />
+            <span>Manage Admins</span>
+            {pendingAdmins.length > 0 && (
+              <span className="admin-badge-count" style={{ background: 'var(--accent-secondary)', color: 'white', padding: '2px 6px', borderRadius: '12px', fontSize: '0.7rem', marginLeft: 'auto' }}>
+                {pendingAdmins.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -609,6 +714,138 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
                                   Delete
                                 </button>
                               </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* My Scheduled Requests Summary Card */}
+              <div className="admin-card">
+                <h3>My Scheduled Requests</h3>
+                {allBookings.length === 0 ? (
+                  <div className="admin-empty-state">
+                    <Clock size={32} />
+                    <p>No active consultation requests found.</p>
+                  </div>
+                ) : (
+                  <div className="user-booking-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {allBookings.map((b, i) => (
+                      <div key={i} className="user-booking-item" style={{ padding: '12px 16px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                        <div className="user-booking-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span className="user-booking-alias" style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{b.alias_name} ({b.contact_info})</span>
+                          <span className={`admin-status-pill ${b.status?.toLowerCase()}`}>
+                            {b.status || 'Pending'}
+                          </span>
+                        </div>
+                        <div className="user-booking-meta" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          {b.counselor_type} &bull; {b.preferred_date} at {b.preferred_time}
+                        </div>
+                        {b.booking_code && <div className="user-booking-code" style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: '4px' }}>Ref: {b.booking_code}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Manage Admins & Access Approvals Tab */}
+        {activeTab === 'approvals' && (
+          <section className="admin-section animate-fade-in">
+            <header className="admin-content-header">
+              <h2>Manage Admins & Access Approvals</h2>
+              <p>Review pending admin signups and manage active administrator accounts.</p>
+            </header>
+
+            <div className="admin-grid-container single-column">
+              {/* Pending Approvals Card */}
+              <div className="admin-card">
+                <h3>Pending Admin Requests ({pendingAdmins.length})</h3>
+                {pendingAdmins.length === 0 ? (
+                  <div className="admin-empty-state">
+                    <CheckCircle size={32} />
+                    <p>No pending admin access requests.</p>
+                  </div>
+                ) : (
+                  <div className="admin-booking-table-wrapper">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Requested At</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingAdmins.map((admin, idx) => (
+                          <tr key={idx}>
+                            <td className="fw-600">{admin.name}</td>
+                            <td>{admin.email}</td>
+                            <td>{admin.requested_at}</td>
+                            <td>
+                              <span className="admin-status-pill pending">
+                                Pending Approval
+                              </span>
+                            </td>
+                            <td>
+                              <div className="admin-action-btns">
+                                <button
+                                  onClick={() => handleApproveAdmin(admin.email)}
+                                  className="btn-action approve"
+                                  title="Approve Admin Access"
+                                >
+                                  Approve Admin
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Active Admins Card */}
+              <div className="admin-card">
+                <h3>Active Administrators</h3>
+                {allAdmins.length === 0 ? (
+                  <div className="admin-empty-state">
+                    <UserPlus size={32} />
+                    <p>No active administrators found.</p>
+                  </div>
+                ) : (
+                  <div className="admin-booking-table-wrapper">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Role Status</th>
+                          <th>Access Level</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allAdmins.map((admin, idx) => (
+                          <tr key={idx}>
+                            <td className="fw-600">{admin.name || 'Admin User'}</td>
+                            <td>{admin.email}</td>
+                            <td>
+                              <span className={`admin-status-pill ${admin.status === 'pending' ? 'pending' : 'approved'}`}>
+                                {admin.status === 'pending' ? 'Pending' : 'Active'}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="admin-badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa' }}>
+                                Full Admin Access
+                              </span>
                             </td>
                           </tr>
                         ))}

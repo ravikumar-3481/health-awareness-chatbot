@@ -39,6 +39,17 @@ class Config:
             print(f"Failed to get Supabase key: {e}")
             raise
 
+    def get_hf_token(self):
+        try:
+            hf_token = os.getenv("HUGGINGFACE_API_TOKEN")
+            if not hf_token:
+                print("HUGGINGFACE_API_TOKEN is not set")
+                raise ValueError("HUGGINGFACE_API_TOKEN is not set")
+            return hf_token
+        except Exception as e:
+            print(f"Failed to get Supabase key: {e}")
+            raise
+
     def get_qdrant_url(self):
         try:
             qdrant_url = os.getenv("QDRANT_URL")
