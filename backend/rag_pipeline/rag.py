@@ -97,4 +97,4 @@ class RAGPipeline:
 
         except Exception as e:
             self.log.error(f"Mistral AI answer generation failed: {e}")
-            return {"answer": FALLBACK_MESSAGE, "sources": []}
+            return {"answer": f"Debug Error: {type(e).__name__} - {str(e)}", "sources": []}
