@@ -91,6 +91,9 @@ class RAGPipeline:
             self.log.info(f"No relevant processed_text context found in Supabase for question: {question}")
             return {"answer": FALLBACK_MESSAGE, "sources": []}
 
+        if context.startswith("DEBUG_"):
+            return {"answer": context, "sources": []}
+
         try:
             response = self.model.generate_answer(context, question)
             if not response or response.strip() == "":
