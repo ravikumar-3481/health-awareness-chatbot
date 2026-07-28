@@ -91,6 +91,6 @@ class Models:
             response = chain.invoke({"context": context, "question": question})
             return response.strip()
 
-        except (ModuleNotFoundError, RuntimeError, TypeError, ValueError) as e:
-            self.log.error("Failed to generate answer !!")
+        except Exception as e:
+            self.log.error(f"Failed to generate answer: {e}")
             raise RuntimeError(f"Failed to Generate Answer: {e}") from e

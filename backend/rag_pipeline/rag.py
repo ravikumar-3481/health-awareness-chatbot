@@ -16,22 +16,20 @@ class RAGPipeline:
         self.chunking = Chunking()
         self.log = self.logger.get_logger()
         self.supabase = None
-        self.supabase_init_error = None
         try:
             self.supabase = create_client(self.config.get_supabase_url(), self.config.get_supabase_key())
         except Exception as e:
-            self.supabase_init_error = str(e)
             self.log.error(f"Failed to initialize Supabase client in RAGPipeline: {e}")
 
     def fetch_supabase_context(self, question: str, max_sources: int = 2):
         """Fetch processed_text from Supabase and rank sources by relevance to question."""
         if not self.supabase:
-            return f"DEBUG_SUPABASE_IS_NONE: {self.supabase_init_error}", []
+            return "", []
         try:
             res = self.supabase.table("urls_registry").select("processed_text", "url").execute()
             rows = res.data or []
             if not rows:
-                return "DEBUG_NO_ROWS_IN_SUPABASE", []
+                return "", []
 
             raw_keywords = set(re.findall(r'\b[\w\u0900-\u097F]{2,}\b', question.lower()))
             stopwords = {
@@ -65,7 +63,7 @@ class RAGPipeline:
             scored_rows.sort(key=lambda x: x[0], reverse=True)
 
             if not scored_rows:
-                # Greeting or no specific match: return representative summary or limited context
+                # Greeting or no specific match: return representative context snippet
                 context_parts = [r.get("processed_text").strip()[:2000] for r in rows[:max_sources] if r.get("processed_text")]
                 sources = list(dict.fromkeys([r.get("url") for r in rows if r.get("url")]))[:max_sources]
                 return "\n\n".join(context_parts), sources
@@ -79,7 +77,7 @@ class RAGPipeline:
 
         except Exception as e:
             self.log.error(f"Error fetching processed_text from Supabase: {e}")
-            return f"DEBUG_FETCH_EXC: {type(e).__name__} - {str(e)}", []
+            return "", []
 
     def answer(self, question: str, top_k: int = 3) -> dict:
         if not question or not isinstance(question, str):
@@ -91,9 +89,6 @@ class RAGPipeline:
             self.log.info(f"No relevant processed_text context found in Supabase for question: {question}")
             return {"answer": FALLBACK_MESSAGE, "sources": []}
 
-        if context.startswith("DEBUG_"):
-            return {"answer": context, "sources": []}
-
         try:
             response = self.model.generate_answer(context, question)
             if not response or response.strip() == "":
@@ -102,4 +97,4 @@ class RAGPipeline:
 
         except Exception as e:
             self.log.error(f"Mistral AI answer generation failed: {e}")
-            return {"answer": f"Debug Error: {type(e).__name__} - {str(e)}", "sources": []}
+            return {"answer": FALLBACK_MESSAGE, "sources": []}
