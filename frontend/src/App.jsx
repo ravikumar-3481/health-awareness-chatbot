@@ -4,7 +4,7 @@ import AdminDashboard from './admin/AdminDashboard';
 import AuthModal from './components/AuthModal';
 import Toast from './components/Toast';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://aurahealthbackend.vercel.app/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://health-awareness-chatbot-5.onrender.com/api';
 
 export default function App() {
   // Current user session state
