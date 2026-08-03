@@ -27,9 +27,12 @@ import {
   Zap,
   Users,
   Server,
-  UserPlus
+  UserPlus,
+  RefreshCw
 } from 'lucide-react';
 import './AdminDashboard.css';
+import ClaudeChatLoader from '../components/ClaudeChatLoader';
+import ThinkingAccordion from '../components/ThinkingAccordion';
 
 export default function AdminDashboard({ currentUser, onSignOut, showToast, API_BASE }) {
   // Set default tab to 'analytics' (System Analysis) after login
@@ -76,6 +79,37 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
     autoApproveBookings: false
   });
 
+  // System Health Diagnostic State
+  const [systemHealth, setSystemHealth] = useState({
+    isHealthy: null,
+    isLoading: true,
+    details: null
+  });
+
+  const fetchSystemHealth = async () => {
+    setSystemHealth(prev => ({ ...prev, isLoading: true }));
+    try {
+      const res = await fetch(`${API_BASE}/health`);
+      if (res.ok) {
+        const data = await res.json();
+        const healthy = data === true || data?.status === 'healthy' || data?.healthy === true || data === 'true';
+        setSystemHealth({ isHealthy: healthy, isLoading: false, details: data });
+        return;
+      }
+      const altUrl = API_BASE.endsWith('/api') ? `${API_BASE.slice(0, -4)}/health` : `${API_BASE}/api/health`;
+      const resAlt = await fetch(altUrl);
+      if (resAlt.ok) {
+        const dataAlt = await resAlt.json();
+        const healthyAlt = dataAlt === true || dataAlt?.status === 'healthy' || dataAlt?.healthy === true || dataAlt === 'true';
+        setSystemHealth({ isHealthy: healthyAlt, isLoading: false, details: dataAlt });
+        return;
+      }
+      setSystemHealth({ isHealthy: false, isLoading: false, details: null });
+    } catch (err) {
+      setSystemHealth({ isHealthy: false, isLoading: false, details: null });
+    }
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isChatLoading]);
@@ -84,6 +118,7 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
     fetchUrls();
     fetchAllBookings();
     fetchAdminData();
+    fetchSystemHealth();
   }, [activeTab]);
 
   useEffect(() => {
@@ -196,6 +231,7 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
     if (!inputMessage.trim() || isChatLoading) return;
 
     const userText = inputMessage.trim();
+    const startTime = Date.now();
     setMessages((prev) => [...prev, { id: Date.now().toString(), sender: 'user', text: userText }]);
     setInputMessage('');
     setIsChatLoading(true);
@@ -210,13 +246,15 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
       if (!res.ok) throw new Error('Server returned an error');
 
       const data = await res.json();
+      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'assistant',
           text: data.answer || 'No response received.',
-          sources: data.sources || []
+          sources: data.sources || [],
+          thinkingTime: elapsedTime
         }
       ]);
     } catch (err) {
@@ -451,10 +489,18 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
               </div>
 
               <div className="admin-card stat-card">
-                <div className="stat-icon-wrapper orange"><Server size={24} /></div>
+                <div className={`stat-icon-wrapper ${systemHealth.isHealthy === true ? 'green' : systemHealth.isHealthy === false ? 'red' : 'orange'}`}>
+                  <Server size={24} />
+                </div>
                 <div className="stat-data">
-                  <span className="stat-label">Vector Storage (ChromaDB)</span>
-                  <span className="stat-number text-green">Healthy</span>
+                  <span className="stat-label">System Health API</span>
+                  <span className={`stat-number ${systemHealth.isHealthy === true ? 'text-green' : systemHealth.isHealthy === false ? 'text-red' : ''}`}>
+                    {systemHealth.isLoading
+                      ? 'Checking...'
+                      : systemHealth.isHealthy === true
+                      ? 'Healthy'
+                      : 'Unhealthy'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -537,11 +583,35 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
             {/* System Health & Realtime Status Monitoring */}
             <div className="admin-grid-container single-column">
               <div className="admin-card">
-                <h3>Backend Infrastructure Diagnostic Status</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 style={{ margin: 0 }}>Backend Infrastructure Diagnostic Status</h3>
+                  <button 
+                    onClick={fetchSystemHealth} 
+                    disabled={systemHealth.isLoading}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                  >
+                    <RefreshCw size={14} className={systemHealth.isLoading ? 'spinning-loader' : ''} />
+                    {systemHealth.isLoading ? 'Checking...' : 'Re-check Health API Route'}
+                  </button>
+                </div>
                 <div className="admin-system-health-grid">
                   <div className="health-status-row">
+                    <span className="health-label">System Health API Route (/api/health)</span>
+                    <span className={`health-badge ${systemHealth.isHealthy === true ? 'healthy' : 'unhealthy'}`}>
+                      {systemHealth.isHealthy === true ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                      {systemHealth.isLoading
+                        ? 'Checking...'
+                        : systemHealth.isHealthy === true
+                        ? 'Healthy (Response: True)'
+                        : 'Unhealthy (Response: False / Error)'}
+                    </span>
+                  </div>
+                  <div className="health-status-row">
                     <span className="health-label">Vector Embedding Model (Mistral AI / HuggingFace)</span>
-                    <span className="health-badge healthy"><CheckCircle size={14} /> Loaded & Ready</span>
+                    <span className={`health-badge ${systemHealth.isHealthy === true ? 'healthy' : 'unhealthy'}`}>
+                      {systemHealth.isHealthy === true ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                      {systemHealth.isHealthy === true ? 'Loaded & Ready' : 'Unhealthy / Offline'}
+                    </span>
                   </div>
                   <div className="health-status-row">
                     <span className="health-label">Supabase Cloud Database & Auth Engine</span>
@@ -549,7 +619,10 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
                   </div>
                   <div className="health-status-row">
                     <span className="health-label">ChromaDB Local Vector Collections</span>
-                    <span className="health-badge healthy"><CheckCircle size={14} /> Synced</span>
+                    <span className={`health-badge ${systemHealth.isHealthy === true ? 'healthy' : 'unhealthy'}`}>
+                      {systemHealth.isHealthy === true ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                      {systemHealth.isHealthy === true ? 'Synced & Ready' : 'Unhealthy / Unreachable'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -870,6 +943,12 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
                   </div>
                   <div className="admin-msg-content">
                     <div className="admin-msg-sender">{msg.sender === 'user' ? 'Admin Tester' : 'Aura Inspector'}</div>
+                    {msg.sender === 'assistant' && (
+                      <ThinkingAccordion 
+                        sources={msg.sources} 
+                        thinkingTime={msg.thinkingTime || '1.4'} 
+                      />
+                    )}
                     <div className="admin-msg-text">{msg.text}</div>
                     {msg.sources?.length > 0 && (
                       <div className="admin-msg-sources">
@@ -882,6 +961,12 @@ export default function AdminDashboard({ currentUser, onSignOut, showToast, API_
                   </div>
                 </div>
               ))}
+
+              {isChatLoading && (
+                <div className="admin-msg-row assistant">
+                  <ClaudeChatLoader agentName="Aura RAG Inspector" />
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 

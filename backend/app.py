@@ -185,7 +185,6 @@ class BookingRequest(BaseModel):
     notes: Optional[str] = Field(default="", example="Need urgent confidential consultation")
 
 
-# Initialize Booking System lazily
 try:
     from features.booking import BookingSystem
     booking_system = BookingSystem()
@@ -208,9 +207,6 @@ def preview_url_text(url: str, max_chars: int = 1000):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==========================================
-# Counselor Booking Routes
-# ==========================================
 
 @app.post("/api/bookings", tags=["Bookings"])
 def create_booking(request: BookingRequest):
@@ -246,7 +242,6 @@ def update_booking_status(booking_code: str, status: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Initialize Authentication System lazily
 try:
     from features.authentication import AuthenticationSystem, AuthRequest, GoogleAuthRequest
     auth_system = AuthenticationSystem()
@@ -255,9 +250,6 @@ except Exception as e:
     print(f"Warning: AuthenticationSystem initialization warning: {e}")
 
 
-# ==========================================
-# Authentication Routes (Supabase)
-# ==========================================
 
 @app.post("/api/auth/signup", tags=["Auth"])
 def auth_signup(request: AuthRequest):

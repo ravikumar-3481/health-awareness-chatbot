@@ -20,6 +20,8 @@ import {
   Sun
 } from 'lucide-react';
 import './UserDashboard.css';
+import ClaudeChatLoader from '../components/ClaudeChatLoader';
+import ThinkingAccordion from '../components/ThinkingAccordion';
 
 export default function UserDashboard({ currentUser, onSignOut, showToast, API_BASE }) {
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'booking', 'about', 'settings'
@@ -89,6 +91,7 @@ export default function UserDashboard({ currentUser, onSignOut, showToast, API_B
     if (!inputMessage.trim() || isChatLoading) return;
 
     const userText = inputMessage.trim();
+    const startTime = Date.now();
     const userMsgObj = {
       id: Date.now().toString(),
       sender: 'user',
@@ -109,13 +112,15 @@ export default function UserDashboard({ currentUser, onSignOut, showToast, API_B
       if (!res.ok) throw new Error('Server returned an error');
 
       const data = await res.json();
+      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'assistant',
           text: data.answer || 'No response received from service.',
-          sources: data.sources || []
+          sources: data.sources || [],
+          thinkingTime: elapsedTime
         }
       ]);
     } catch (err) {
@@ -125,7 +130,8 @@ export default function UserDashboard({ currentUser, onSignOut, showToast, API_B
           id: (Date.now() + 1).toString(),
           sender: 'assistant',
           text: 'I am unable to reach the health knowledge server right now. Please verify the backend is running at http://localhost:8001.\n\nHealthy habit tip: Ensure 7-8 hours of continuous sleep and stay hydrated throughout the day.',
-          sources: ['System Notice']
+          sources: ['System Notice'],
+          thinkingTime: '0.8'
         }
       ]);
       showToast('error', 'Unable to connect to AI Assistant service');
@@ -286,6 +292,12 @@ export default function UserDashboard({ currentUser, onSignOut, showToast, API_B
                   </div>
                   <div className="user-msg-content">
                     <div className="user-msg-sender">{msg.sender === 'user' ? currentUser?.name : 'Aura Assistant'}</div>
+                    {msg.sender === 'assistant' && (
+                      <ThinkingAccordion
+                        sources={msg.sources}
+                        thinkingTime={msg.thinkingTime || '1.4'}
+                      />
+                    )}
                     <div className="user-msg-text">{msg.text}</div>
                     {msg.sources?.length > 0 && (
                       <div className="user-msg-sources">
@@ -303,11 +315,7 @@ export default function UserDashboard({ currentUser, onSignOut, showToast, API_B
 
               {isChatLoading && (
                 <div className="user-msg-row assistant">
-                  <div className="user-msg-avatar"><Sparkles size={18} /></div>
-                  <div className="user-msg-content">
-                    <div className="user-msg-sender">Aura Assistant</div>
-                    <div className="typing-dots"><span></span><span></span><span></span></div>
-                  </div>
+                  <ClaudeChatLoader agentName="Aura Health AI Agent" />
                 </div>
               )}
               <div ref={messagesEndRef} />

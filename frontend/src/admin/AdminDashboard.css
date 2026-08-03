@@ -444,11 +444,13 @@
 .stat-icon-wrapper.purple { background: #faf5ff; color: #9333ea; }
 
 .stat-icon-wrapper.orange { background: #fff7ed; color: #ea580c; }
+.stat-icon-wrapper.red { background: #fef2f2; color: #dc2626; }
 
 .stat-data { display: flex; flex-direction: column; }
 .stat-label { font-size: 0.85rem; color: #64748b; }
 .stat-number { font-size: 1.6rem; font-weight: 700; color: #0f172a; }
 .text-green { color: #16a34a; }
+.text-red { color: #dc2626; }
 
 .chart-bar-list { display: flex; flex-direction: column; gap: 1rem; }
 .chart-bar-item { display: flex; flex-direction: column; gap: 0.35rem; }
@@ -491,6 +493,18 @@
   gap: 6px;
   background: #dcfce7;
   color: #15803d;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.health-badge.unhealthy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
   font-size: 0.8rem;
   font-weight: 600;
   padding: 4px 10px;

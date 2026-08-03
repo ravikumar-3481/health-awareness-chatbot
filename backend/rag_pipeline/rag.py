@@ -63,7 +63,6 @@ class RAGPipeline:
             scored_rows.sort(key=lambda x: x[0], reverse=True)
 
             if not scored_rows:
-                # Greeting or no specific match: return representative context snippet
                 context_parts = [r.get("processed_text").strip()[:2000] for r in rows[:max_sources] if r.get("processed_text")]
                 sources = list(dict.fromkeys([r.get("url") for r in rows if r.get("url")]))[:max_sources]
                 return "\n\n".join(context_parts), sources
