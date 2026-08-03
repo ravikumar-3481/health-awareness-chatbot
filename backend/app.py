@@ -77,9 +77,11 @@ def root():
 
 
 @app.get("/health", tags=["Health"])
+@app.get("/api/health", tags=["Health"])
 def health_check():
     return {
         "status": "healthy",
+        "healthy": True,
         "rag_pipeline_loaded": rag_pipeline is not None,
         "admin_panel_loaded": admin_panel is not None,
     }
