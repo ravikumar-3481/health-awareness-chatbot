@@ -5,7 +5,7 @@ from model.model import Models
 from core.chunking import Chunking
 from utils.logger import Logger
 
-FALLBACK_MESSAGE = "I don't have enough information on this topic in my knowledge base."
+FALLBACK_MESSAGE = "Rate Limit: Your Free Plan Has Ended . Please Uppgrade use use Ai Model."
 
 
 class RAGPipeline:
